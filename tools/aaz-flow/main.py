@@ -1,7 +1,8 @@
 import os
+from pathlib import Path
 from fastmcp import FastMCP, Context
 from models import AAZRequest
-from helpers import execute_commands, validate_paths, get_extension_name, get_swagger_config
+from helpers import generate_tests, execute_commands, validate_paths, get_extension_name, get_swagger_config
 
 mcp = FastMCP("AAZ Flow")
 
@@ -53,7 +54,18 @@ async def generate_code(ctx: Context):
 
     await execute_commands(ctx, paths, request)
     await ctx.report_progress(100, 100)
-    return f"Code generation completed for extension/module '{extension_name}'."
+    await ctx.info(f"Code generation completed for extension/module '{extension_name}'.")
+
+    ctx.generated_module = extension_name
+
+    await ctx.info("Automatically generating tests for the newly generated module...")
+    try:
+        test_result = await generate_tests(ctx)
+        await ctx.info(f"Automatic test generation result: {test_result}")
+    except Exception as e:
+        await ctx.info(f"Automatic test generation failed: {str(e)}")
+
+    return f"Code generation and test generation completed for extension/module '{extension_name}'."
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")
